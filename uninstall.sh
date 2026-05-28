@@ -3,17 +3,32 @@ set -e
 
 echo "🗑️  Uninstalling gog CLI..."
 
-# Remove binary
-if [ -f "/usr/local/bin/gog" ]; then
-    echo "Removing /usr/local/bin/gog..."
-    if [ -w /usr/local/bin ]; then
-        rm /usr/local/bin/gog
-    else
-        sudo rm /usr/local/bin/gog
-    fi
+removed_any=0
+
+# New install location (used by install.sh after the 2026-05 rewrite)
+USER_BIN="$HOME/.local/bin/gog"
+if [ -f "$USER_BIN" ]; then
+    echo "Removing $USER_BIN..."
+    rm "$USER_BIN"
     echo "✅ Binary removed"
-else
-    echo "⚠️  Binary not found at /usr/local/bin/gog"
+    removed_any=1
+fi
+
+# Legacy install location (used by older install.sh, kept for cleanup)
+SYS_BIN="/usr/local/bin/gog"
+if [ -f "$SYS_BIN" ]; then
+    echo "Removing $SYS_BIN..."
+    if [ -w /usr/local/bin ]; then
+        rm "$SYS_BIN"
+    else
+        sudo rm "$SYS_BIN"
+    fi
+    echo "✅ Legacy binary removed"
+    removed_any=1
+fi
+
+if [ "$removed_any" -eq 0 ]; then
+    echo "⚠️  No gog binary found at $USER_BIN or $SYS_BIN"
 fi
 
 # Ask about config/credentials
@@ -27,7 +42,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     else
         CONFIG_DIR="$HOME/.config/gogcli"
     fi
-    
+
     if [ -d "$CONFIG_DIR" ]; then
         echo "Removing $CONFIG_DIR..."
         rm -rf "$CONFIG_DIR"
